@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OCI Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+  <main class="container">
+    <header class="hero">
+      <h1>OCI Dashboard</h1>
+      <p>Read-only visibility across multiple registries.</p>
+    </header>
+
+    <section class="panel controls">
+      <div class="control-row">
+        <label class="control-item grow">
+          <span>Search</span>
+          <input id="q" placeholder="repository or tag" />
+        </label>
+        <button id="search" class="btn-primary">Search</button>
+      </div>
+      <label class="fav-toggle"><input id="favOnly" type="checkbox" /> Favorites only</label>
+    </section>
+
+    <div class="workspace">
+      <aside class="side-column">
+        <section class="panel">
+          <div class="panel-title">Registry Status</div>
+          <div id="statuses" class="statuses"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Tags</div>
+          <table>
+            <thead><tr><th>Tag</th><th>Image Ref</th><th>Action</th></tr></thead>
+            <tbody id="tags"></tbody>
+          </table>
+        </section>
+      </aside>
+
+      <section class="panel main-column">
+        <div class="panel-title">Artifacts</div>
+        <div id="repoGroups" class="repo-groups"></div>
+      </section>
+    </div>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
