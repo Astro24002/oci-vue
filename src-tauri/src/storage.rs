@@ -37,7 +37,9 @@ impl ConnectionStore for FileConnectionStore {
     fn save_connections(&self, connections: &[RegistryConnection]) -> Result<(), AppError> {
         fs::create_dir_all(&self.base_dir).map_err(|err| AppError::Storage(err.to_string()))?;
         let contents = serde_json::to_string_pretty(connections).map_err(AppError::from)?;
-        fs::write(self.file_path(), contents).map_err(|err| AppError::Storage(err.to_string()))
+        let temp_path = self.base_dir.join("connections.json.tmp");
+        fs::write(&temp_path, contents).map_err(|err| AppError::Storage(err.to_string()))?;
+        fs::rename(temp_path, self.file_path()).map_err(|err| AppError::Storage(err.to_string()))
     }
 }
 

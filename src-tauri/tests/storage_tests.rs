@@ -1,3 +1,5 @@
+use std::fs;
+
 use oci_vue_lib::credentials::{decrypt_secret, encrypt_secret};
 use oci_vue_lib::models::RegistryConnection;
 use oci_vue_lib::storage::{ConnectionStore, FileConnectionStore};
@@ -27,4 +29,39 @@ fn encrypts_without_storing_plaintext() {
 
     assert!(!encrypted.contains("token-value"));
     assert_eq!(decrypt_secret(&encrypted, "local-key").expect("decrypt"), "token-value");
+}
+
+#[test]
+fn corrupted_connections_file_returns_error() {
+    let dir = tempdir().expect("tempdir");
+    fs::write(dir.path().join("connections.json"), "not-json").expect("write corrupted file");
+    let store = FileConnectionStore::new(dir.path().to_path_buf());
+
+    assert!(store.load_connections().is_err());
+}
+
+#[test]
+fn malformed_encrypted_payload_returns_error() {
+    assert!(decrypt_secret("not-encrypted", "local-key").is_err());
+}
+
+#[test]
+fn wrong_key_decrypt_returns_error() {
+    let encrypted = encrypt_secret("token-value", "local-key").expect("encrypt");
+
+    assert!(decrypt_secret(&encrypted, "wrong-key").is_err());
+}
+
+#[test]
+fn short_nonce_returns_error_without_panic() {
+    let result = std::panic::catch_unwind(|| decrypt_secret("AAAA:AAAA", "local-key"));
+
+    assert!(result.is_ok());
+    assert!(result.expect("no panic").is_err());
+}
+
+#[test]
+fn empty_key_material_returns_error() {
+    assert!(encrypt_secret("token-value", "").is_err());
+    assert!(decrypt_secret("AAAA:AAAA", "").is_err());
 }
