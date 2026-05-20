@@ -1,6 +1,8 @@
+pub mod credentials;
 pub mod errors;
 pub mod manifest;
 pub mod models;
+pub mod storage;
 
 pub fn run() {
     tauri::Builder::default()
