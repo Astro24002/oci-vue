@@ -1,4 +1,4 @@
-use oci_vue_lib::manifest::{parse_image_config, parse_manifest_summary};
+use oci_vue_lib::manifest::{attach_history, parse_image_config, parse_manifest_summary};
 
 #[test]
 fn parses_manifest_summary() {
@@ -40,4 +40,44 @@ fn maps_non_empty_history_to_layers() {
     assert_eq!(history.layer_history.len(), 2);
     assert_eq!(history.layer_history[0].created_by.as_deref(), Some("RUN apk add --no-cache ca-certificates"));
     assert_eq!(history.empty_history.len(), 1);
+}
+
+#[test]
+fn rejects_manifest_without_config_or_layers() {
+    let index = r#"{
+      "schemaVersion": 2,
+      "mediaType": "application/vnd.oci.image.index.v1+json",
+      "manifests": [
+        { "mediaType": "application/vnd.oci.image.manifest.v1+json", "digest": "sha256:image", "size": 7023 }
+      ]
+    }"#;
+
+    let result = parse_manifest_summary(index);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn attach_history_rejects_layer_history_mismatch() {
+    let manifest = r#"{
+      "schemaVersion": 2,
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "config": { "mediaType": "application/vnd.oci.image.config.v1+json", "digest": "sha256:config", "size": 7023 },
+      "layers": [
+        { "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip", "digest": "sha256:layer1", "size": 32654 },
+        { "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip", "digest": "sha256:layer2", "size": 16724 }
+      ]
+    }"#;
+    let config = r#"{
+      "history": [
+        { "created_by": "RUN apk add --no-cache ca-certificates" }
+      ]
+    }"#;
+
+    let summary = parse_manifest_summary(manifest).expect("manifest should parse");
+    let history = parse_image_config(config).expect("config should parse");
+
+    let result = attach_history(summary, &history);
+
+    assert!(result.is_err());
 }

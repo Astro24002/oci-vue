@@ -36,9 +36,12 @@ struct RawHistoryEntry {
 
 pub fn parse_manifest_summary(raw_json: &str) -> Result<ManifestSummary, AppError> {
     let raw: RawManifest = serde_json::from_str(raw_json)?;
+    let config = raw
+        .config
+        .ok_or_else(|| AppError::Parse("manifest is missing config".to_string()))?;
     let layers = raw
         .layers
-        .unwrap_or_default()
+        .ok_or_else(|| AppError::Parse("manifest is missing layers".to_string()))?
         .into_iter()
         .map(|layer| LayerSummary {
             digest: layer.digest,
@@ -51,9 +54,9 @@ pub fn parse_manifest_summary(raw_json: &str) -> Result<ManifestSummary, AppErro
     Ok(ManifestSummary {
         schema_version: raw.schema_version,
         media_type: raw.media_type,
-        config_digest: raw.config.as_ref().map(|config| config.digest.clone()),
-        config_media_type: raw.config.as_ref().and_then(|config| config.media_type.clone()),
-        config_size: raw.config.as_ref().and_then(|config| config.size),
+        config_digest: Some(config.digest),
+        config_media_type: config.media_type,
+        config_size: config.size,
         layers,
         raw_json: raw_json.to_string(),
     })
@@ -82,9 +85,17 @@ pub fn parse_image_config(raw_json: &str) -> Result<ImageConfigSummary, AppError
     })
 }
 
-pub fn attach_history(mut manifest: ManifestSummary, config: &ImageConfigSummary) -> ManifestSummary {
+pub fn attach_history(mut manifest: ManifestSummary, config: &ImageConfigSummary) -> Result<ManifestSummary, AppError> {
+    if config.layer_history.len() != manifest.layers.len() {
+        return Err(AppError::Parse(format!(
+            "manifest layer count {} does not match config history count {}",
+            manifest.layers.len(),
+            config.layer_history.len()
+        )));
+    }
+
     for (index, layer) in manifest.layers.iter_mut().enumerate() {
         layer.history = config.layer_history.get(index).and_then(|entry| entry.created_by.clone());
     }
-    manifest
+    Ok(manifest)
 }
