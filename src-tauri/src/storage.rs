@@ -38,8 +38,12 @@ impl ConnectionStore for FileConnectionStore {
         fs::create_dir_all(&self.base_dir).map_err(|err| AppError::Storage(err.to_string()))?;
         let contents = serde_json::to_string_pretty(connections).map_err(AppError::from)?;
         let temp_path = self.base_dir.join("connections.json.tmp");
+        let destination_path = self.file_path();
         fs::write(&temp_path, contents).map_err(|err| AppError::Storage(err.to_string()))?;
-        fs::rename(temp_path, self.file_path()).map_err(|err| AppError::Storage(err.to_string()))
+        if destination_path.exists() {
+            fs::remove_file(&destination_path).map_err(|err| AppError::Storage(err.to_string()))?;
+        }
+        fs::rename(temp_path, destination_path).map_err(|err| AppError::Storage(err.to_string()))
     }
 }
 

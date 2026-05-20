@@ -24,6 +24,31 @@ fn saves_and_loads_connections() {
 }
 
 #[test]
+fn repeated_save_replaces_existing_connections() {
+    let dir = tempdir().expect("tempdir");
+    let store = FileConnectionStore::new(dir.path().to_path_buf());
+    let first = RegistryConnection {
+        id: "abc".to_string(),
+        name: "Harbor Prod".to_string(),
+        registry_url: "harbor.company.local".to_string(),
+        username: "robot".to_string(),
+        remember_secret: true,
+    };
+    let second = RegistryConnection {
+        id: "def".to_string(),
+        name: "GHCR".to_string(),
+        registry_url: "ghcr.io".to_string(),
+        username: "developer".to_string(),
+        remember_secret: false,
+    };
+
+    store.save_connections(&[first]).expect("first save");
+    store.save_connections(&[second.clone()]).expect("second save");
+
+    assert_eq!(store.load_connections().expect("load"), vec![second]);
+}
+
+#[test]
 fn encrypts_without_storing_plaintext() {
     let encrypted = encrypt_secret("token-value", "local-key").expect("encrypt");
 
