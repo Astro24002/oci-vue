@@ -1,8 +1,9 @@
 use std::fs;
+use std::io;
 
 use oci_vue_lib::credentials::{decrypt_secret, encrypt_secret};
 use oci_vue_lib::models::RegistryConnection;
-use oci_vue_lib::storage::{ConnectionStore, FileConnectionStore};
+use oci_vue_lib::storage::{replace_file_with_temp, ConnectionStore, FileConnectionStore};
 use tempfile::tempdir;
 
 #[test]
@@ -46,6 +47,29 @@ fn repeated_save_replaces_existing_connections() {
     store.save_connections(&[second.clone()]).expect("second save");
 
     assert_eq!(store.load_connections().expect("load"), vec![second]);
+}
+
+#[test]
+fn failed_replacement_preserves_existing_connections_file() {
+    let dir = tempdir().expect("tempdir");
+    let destination_path = dir.path().join("connections.json");
+    let temp_path = dir.path().join("connections.json.tmp");
+    fs::write(&destination_path, "existing-connections").expect("write existing");
+    fs::write(&temp_path, "new-connections").expect("write temp");
+    let mut rename_calls = 0;
+
+    let result = replace_file_with_temp(&temp_path, &destination_path, |from, to| {
+        rename_calls += 1;
+        if from == temp_path && to == destination_path {
+            return Err(io::Error::new(io::ErrorKind::Other, "simulated final rename failure"));
+        }
+        fs::rename(from, to)
+    });
+
+    assert!(result.is_err());
+    assert_eq!(fs::read_to_string(&destination_path).expect("read destination"), "existing-connections");
+    assert!(!dir.path().join("connections.json.bak").exists());
+    assert_eq!(rename_calls, 3);
 }
 
 #[test]
