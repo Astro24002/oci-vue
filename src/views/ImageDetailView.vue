@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ManifestDetail from '../components/ManifestDetail.vue'
 import TagList from '../components/TagList.vue'
-import type { TagSummary } from '../types/registry'
+import { loadTags, registryState } from '../stores/registryStore'
 
 const props = defineProps<{ imageName: string | string[] }>()
 
 const imageNameText = computed(() => Array.isArray(props.imageName) ? props.imageName.join('/') : props.imageName)
-const selectedTag = ref('v1.8.2')
-const tags: TagSummary[] = [
-  { name: 'v1.8.2', digest: 'sha256:9f2a8d', mediaType: 'OCI Image', size: 88604672, created: '2026-05-18' },
-  { name: 'latest', digest: 'sha256:9f2a8d', mediaType: 'OCI Image', size: 88604672, created: '2026-05-18' },
-  { name: 'v1.8.1', digest: 'sha256:5ad18c', mediaType: 'OCI Image', size: 87975526, created: '2026-05-10' }
-]
+const selectedTag = ref('')
+
+onMounted(async () => {
+  await loadTags(imageNameText.value)
+  selectedTag.value = registryState.tags[0]?.name ?? ''
+})
 </script>
 
 <template>
@@ -30,7 +30,7 @@ const tags: TagSummary[] = [
     </header>
 
     <main class="content">
-      <TagList :tags="tags" :selected-tag="selectedTag" @select="selectedTag = $event" />
+      <TagList :tags="registryState.tags" :selected-tag="selectedTag" @select="selectedTag = $event" />
       <ManifestDetail />
     </main>
   </div>

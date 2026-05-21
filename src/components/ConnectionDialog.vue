@@ -1,29 +1,51 @@
+<script setup lang="ts">
+import { reactive } from 'vue'
+import type { NewRegistryConnection } from '../types/registry'
+
+const emit = defineEmits<{
+  save: [connection: NewRegistryConnection]
+  cancel: []
+}>()
+
+const form = reactive<NewRegistryConnection>({
+  name: '',
+  registryUrl: '',
+  username: '',
+  secret: '',
+  rememberSecret: false
+})
+
+function submit() {
+  emit('save', { ...form })
+}
+</script>
+
 <template>
   <dialog class="connection-dialog" open>
-    <form class="connection-dialog__form" method="dialog">
+    <form class="connection-dialog__form" @submit.prevent="submit">
       <h2>Add Connection</h2>
       <label>
         Name
-        <input class="input" type="text" />
+        <input v-model="form.name" class="input" type="text" required />
       </label>
       <label>
         Registry URL
-        <input class="input" type="text" />
+        <input v-model="form.registryUrl" class="input" type="text" required />
       </label>
       <label>
         Username
-        <input class="input" type="text" />
+        <input v-model="form.username" class="input" type="text" required />
       </label>
       <label>
         Secret
-        <input class="input" type="password" />
+        <input v-model="form.secret" class="input" type="password" required />
       </label>
       <label class="connection-dialog__checkbox">
-        <input type="checkbox" />
+        <input v-model="form.rememberSecret" type="checkbox" />
         Remember secret
       </label>
       <div class="connection-dialog__actions">
-        <button class="button" type="button">Cancel</button>
+        <button class="button" type="button" @click="$emit('cancel')">Cancel</button>
         <button class="button button-primary" type="submit">Save</button>
       </div>
     </form>

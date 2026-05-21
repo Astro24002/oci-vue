@@ -1,30 +1,42 @@
-import type { ImageSummary, RegistryConnection } from '../types/registry'
+import { reactive } from 'vue'
+import { listConnections, listImages, listTags, saveConnection } from '../api/tauri'
+import type { ImageSummary, NewRegistryConnection, RegistryConnection, TagSummary } from '../types/registry'
 
-export interface RegistryState {
-  connections: RegistryConnection[]
-  selectedConnectionId: string | null
-  images: ImageSummary[]
+export const registryState = reactive({
+  connections: [] as RegistryConnection[],
+  selectedConnectionId: null as string | null,
+  images: [] as ImageSummary[],
+  tags: [] as TagSummary[],
+  loading: false,
+  error: null as string | null
+})
+
+export async function loadConnections() {
+  registryState.connections = await listConnections()
+  registryState.selectedConnectionId = registryState.connections[0]?.id ?? null
 }
 
-export const registryState: RegistryState = {
-  connections: [],
-  selectedConnectionId: null,
-  images: [
-    {
-      name: 'platform/api',
-      latestTag: 'v1.8.2',
-      digest: 'sha256:9f2a8d',
-      mediaType: 'OCI Image',
-      size: 88604672,
-      updated: '2026-05-18'
-    },
-    {
-      name: 'infra/charts/nginx',
-      latestTag: '0.4.1',
-      digest: 'sha256:69abc4',
-      mediaType: 'Helm Chart',
-      size: 319488,
-      updated: '2026-05-16'
-    }
-  ]
+export async function createConnection(input: NewRegistryConnection) {
+  const connection = await saveConnection(input)
+  registryState.connections.push(connection)
+  registryState.selectedConnectionId = connection.id
+}
+
+export async function loadImages(page = 1, pageSize = 20, search = '') {
+  if (!registryState.selectedConnectionId) return
+  registryState.loading = true
+  registryState.error = null
+  try {
+    const result = await listImages(registryState.selectedConnectionId, page, pageSize, search)
+    registryState.images = result.items
+  } catch (error) {
+    registryState.error = error instanceof Error ? error.message : 'Failed to load images'
+  } finally {
+    registryState.loading = false
+  }
+}
+
+export async function loadTags(imageName: string) {
+  if (!registryState.selectedConnectionId) return
+  registryState.tags = await listTags(registryState.selectedConnectionId, imageName)
 }

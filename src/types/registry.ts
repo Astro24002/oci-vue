@@ -23,6 +23,13 @@ export interface ImageSummary {
   updated?: string | null
 }
 
+export interface PagedImages {
+  items: ImageSummary[]
+  page: number
+  pageSize: number
+  total?: number | null
+}
+
 export interface TagSummary {
   name: string
   digest?: string | null
