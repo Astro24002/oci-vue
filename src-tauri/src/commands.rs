@@ -2,6 +2,7 @@ use uuid::Uuid;
 
 use crate::errors::UiError;
 use crate::models::{ImageSummary, NewRegistryConnection, PagedImages, RegistryConnection, TagSummary};
+use crate::registry_client::RegistryClient;
 use crate::storage::{default_app_data_dir, ConnectionStore, FileConnectionStore};
 
 #[tauri::command]
@@ -28,51 +29,66 @@ pub async fn save_connection(input: NewRegistryConnection) -> Result<RegistryCon
 
 #[tauri::command]
 pub async fn list_images(
-    _connection_id: String,
+    connection_id: String,
     page: u32,
     page_size: u32,
     search: Option<String>,
 ) -> Result<PagedImages, UiError> {
-    let mut items = vec![
-        ImageSummary {
-            name: "platform/api".to_string(),
-            latest_tag: Some("v1.8.2".to_string()),
-            digest: Some("sha256:9f2a8d".to_string()),
-            media_type: Some("OCI Image".to_string()),
-            size: Some(88_604_672),
-            updated: Some("2026-05-18".to_string()),
-        },
-        ImageSummary {
-            name: "infra/charts/nginx".to_string(),
-            latest_tag: Some("0.4.1".to_string()),
-            digest: Some("sha256:69abc4".to_string()),
-            media_type: Some("Helm Chart".to_string()),
-            size: Some(319_488),
-            updated: Some("2026-05-16".to_string()),
-        },
-    ];
-    if let Some(search) = search {
-        items.retain(|image| image.name.contains(&search));
+    let store = FileConnectionStore::new(default_app_data_dir().map_err(UiError::from)?);
+    let connections = store.load_connections().map_err(UiError::from)?;
+    let connection = find_connection(connections, &connection_id)?;
+    let client = RegistryClient::new(&connection.registry_url, &connection.username, "")
+        .map_err(UiError::from)?;
+    let repositories = client.catalog(page_size, None).await.map_err(UiError::from)?;
+    let filtered = repositories
+        .into_iter()
+        .filter(|name| search.as_ref().map(|term| name.contains(term)).unwrap_or(true));
+    let mut items = Vec::new();
+    for name in filtered {
+        let tags = client.tags(&name).await.unwrap_or_default();
+        let latest_tag = if tags.iter().any(|tag| tag == "latest") {
+            Some("latest".to_string())
+        } else {
+            tags.last().cloned()
+        };
+        items.push(ImageSummary {
+            name,
+            latest_tag,
+            digest: None,
+            media_type: None,
+            size: None,
+            updated: None,
+        });
     }
-    Ok(PagedImages { items, page, page_size, total: Some(2) })
+    Ok(PagedImages { items, page, page_size, total: None })
 }
 
 #[tauri::command]
-pub async fn list_tags(_connection_id: String, _image_name: String) -> Result<Vec<TagSummary>, UiError> {
-    Ok(vec![
-        TagSummary {
-            name: "v1.8.2".to_string(),
-            digest: Some("sha256:9f2a8d".to_string()),
-            media_type: Some("OCI Image".to_string()),
-            size: Some(88_604_672),
-            created: Some("2026-05-18".to_string()),
-        },
-        TagSummary {
-            name: "latest".to_string(),
-            digest: Some("sha256:9f2a8d".to_string()),
-            media_type: Some("OCI Image".to_string()),
-            size: Some(88_604_672),
-            created: Some("2026-05-18".to_string()),
-        },
-    ])
+pub async fn list_tags(connection_id: String, image_name: String) -> Result<Vec<TagSummary>, UiError> {
+    let store = FileConnectionStore::new(default_app_data_dir().map_err(UiError::from)?);
+    let connections = store.load_connections().map_err(UiError::from)?;
+    let connection = find_connection(connections, &connection_id)?;
+    let client = RegistryClient::new(&connection.registry_url, &connection.username, "")
+        .map_err(UiError::from)?;
+    let tags = client.tags(&image_name).await.map_err(UiError::from)?;
+    Ok(tags
+        .into_iter()
+        .map(|name| TagSummary {
+            name,
+            digest: None,
+            media_type: None,
+            size: None,
+            created: None,
+        })
+        .collect())
+}
+
+fn find_connection(
+    connections: Vec<RegistryConnection>,
+    connection_id: &str,
+) -> Result<RegistryConnection, UiError> {
+    connections
+        .into_iter()
+        .find(|connection| connection.id == connection_id)
+        .ok_or_else(|| UiError { message: "connection not found".to_string() })
 }
