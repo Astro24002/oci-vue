@@ -2,7 +2,7 @@ use std::fs;
 use std::io;
 
 use oci_vue_lib::credentials::{decrypt_secret, encrypt_secret};
-use oci_vue_lib::models::RegistryConnection;
+use oci_vue_lib::models::{NewRegistryConnection, RegistryConnection};
 use oci_vue_lib::storage::{replace_file_with_temp, ConnectionStore, FileConnectionStore};
 use tempfile::tempdir;
 
@@ -22,6 +22,33 @@ fn saves_and_loads_connections() {
     let loaded = store.load_connections().expect("load");
 
     assert_eq!(loaded, vec![connection]);
+}
+
+#[test]
+fn connection_models_use_camel_case_for_frontend_ipc() {
+    let input = serde_json::json!({
+        "name": "Harbor Prod",
+        "registryUrl": "harbor.company.local",
+        "username": "robot",
+        "secret": "token-value",
+        "rememberSecret": true
+    });
+
+    let parsed: NewRegistryConnection = serde_json::from_value(input).expect("parse frontend input");
+    assert_eq!(parsed.registry_url, "harbor.company.local");
+    assert!(parsed.remember_secret);
+
+    let output = serde_json::to_value(RegistryConnection {
+        id: "abc".to_string(),
+        name: "Harbor Prod".to_string(),
+        registry_url: "harbor.company.local".to_string(),
+        username: "robot".to_string(),
+        remember_secret: true,
+    })
+    .expect("serialize frontend output");
+
+    assert_eq!(output["registryUrl"], "harbor.company.local");
+    assert_eq!(output["rememberSecret"], true);
 }
 
 #[test]

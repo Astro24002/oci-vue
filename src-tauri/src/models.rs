@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct RegistryConnection {
     pub id: String,
     pub name: String,
@@ -10,6 +11,7 @@ pub struct RegistryConnection {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct NewRegistryConnection {
     pub name: String,
     pub registry_url: String,
@@ -19,6 +21,7 @@ pub struct NewRegistryConnection {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct ImageSummary {
     pub name: String,
     pub latest_tag: Option<String>,
@@ -29,6 +32,7 @@ pub struct ImageSummary {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct PagedImages {
     pub items: Vec<ImageSummary>,
     pub page: u32,
@@ -37,6 +41,7 @@ pub struct PagedImages {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct TagSummary {
     pub name: String,
     pub digest: Option<String>,
