@@ -1,9 +1,0 @@
-{
-  "server": { "port": 8080 },
-  "sync": {
-    "defaultIntervalSec": 10,
-    "requestTimeoutSec": 15,
-    "retryCount": 1
-  },
-  "registries": []
-}
