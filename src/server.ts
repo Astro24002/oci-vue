@@ -1,20 +1,14 @@
 import { buildRuntimeApp } from "./app.js";
 import { fileURLToPath } from "node:url";
 
-export function validateAdminConfig(username: string, password: string) {
-  if (!username || !password) {
-    throw new Error("ADMIN_USERNAME and ADMIN_PASSWORD are required");
-  }
+export function resolveConfigPath(configPath: string | undefined) {
+  return configPath ?? "config.json";
 }
 
 const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
-  const adminUsername = process.env.ADMIN_USERNAME ?? "";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "";
-  validateAdminConfig(adminUsername, adminPassword);
-
-  const configPath = process.env.CONFIG_PATH ?? "data/config.json";
+  const configPath = resolveConfigPath(process.env.CONFIG_PATH);
   const port = Number(process.env.PORT ?? 8080);
   const app = await buildRuntimeApp(configPath);
   const server = app.listen(port, () => {

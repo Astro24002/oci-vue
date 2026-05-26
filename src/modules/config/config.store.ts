@@ -9,8 +9,7 @@ export class ConfigStore {
 
   async load(): Promise<AppConfig> {
     const raw = await readFile(this.filePath, "utf8");
-    const parsed = JSON.parse(raw);
-    return appConfigSchema.parse(parsed);
+    return appConfigSchema.parse(JSON.parse(raw));
   }
 
   async save(config: AppConfig): Promise<void> {

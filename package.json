@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
-    "test": "vitest run"
+    "start": "node dist/src/server.js",
+    "test": "vitest run --exclude .worktrees/**"
   },
   "dependencies": {
     "express": "^4.19.2",

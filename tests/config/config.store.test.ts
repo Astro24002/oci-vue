@@ -24,4 +24,5 @@ describe("ConfigStore", () => {
     const raw = JSON.parse(await readFile(file, "utf8"));
     expect(raw.sync.defaultIntervalSec).toBe(10);
   });
+
 });

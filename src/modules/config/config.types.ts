@@ -1,9 +1,12 @@
+export type RegistryType = "docker-registry" | "harbor" | "acr";
+
 export type RegistryConfig = {
   id: string;
   name: string;
+  type: RegistryType;
   baseUrl: string;
-  username: string;
-  password: string;
+  username?: string;
+  password?: string;
   enabled: boolean;
   intervalSec?: number;
 };

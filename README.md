@@ -1,19 +1,18 @@
-# OCI Dashboard (Node)
+# OCI Dashboard
 
-Lightweight OCI registry dashboard backend using Node.js + TypeScript with dynamic runtime registry configuration.
+Read-only cached OCI artifact dashboard for docker-registry, Harbor, and Azure Container Registry.
 
 ## Features
 
-- Runtime registry config management via API
-- Hot reload of sync tasks without process restart
-- Per-registry latest sync status
-- Connectivity/auth test endpoint for registry config
-- Local JSON config persistence with atomic write
-
-## Requirements
-
-- Node.js 20+
-- npm
+- Root `config.json` runtime configuration
+- docker-registry, Harbor, and ACR adapters
+- In-memory repository and tag cache
+- Independent per-registry refresh workers
+- Repository search and filtering
+- Terminal-style dashboard with registry, namespace, and status filters
+- Tag table with copyable image references
+- Manifest layer details with build command history when available
+- Partial failure display for unhealthy registries
 
 ## Install
 
@@ -21,24 +20,9 @@ Lightweight OCI registry dashboard backend using Node.js + TypeScript with dynam
 npm install
 ```
 
-## Configuration
+## Configure
 
-Default runtime config path is `data/config.json`.
-
-Create it from example:
-
-```bash
-cp data/config.example.json data/config.json
-```
-
-You can override config path with `CONFIG_PATH`.
-
-Admin authentication is required at startup:
-
-- `ADMIN_USERNAME`
-- `ADMIN_PASSWORD`
-
-Example `data/config.example.json`:
+The service reads `config.json` by default:
 
 ```json
 {
@@ -52,9 +36,10 @@ Example `data/config.example.json`:
     {
       "id": "reg1",
       "name": "docker-registry",
-      "baseUrl": "https://registry.example.com",
-      "username": "${REG1_USERNAME}",
-      "password": "${REG1_PASSWORD}",
+      "type": "docker-registry",
+      "baseUrl": "https://docker-registry.lab.zverse.space:32443",
+      "username": "optional-user",
+      "password": "optional-password",
       "enabled": true,
       "intervalSec": 10
     }
@@ -62,57 +47,27 @@ Example `data/config.example.json`:
 }
 ```
 
+Use `CONFIG_PATH=/path/to/config.json` to run with another config file.
+
 ## Run
 
-Development:
-
 ```bash
-ADMIN_USERNAME=admin ADMIN_PASSWORD=secret CONFIG_PATH=data/config.json npm run dev
+npm run dev
 ```
 
-Build and start:
+The dashboard is available at `http://localhost:8080`.
+
+## Build
 
 ```bash
 npm run build
-ADMIN_USERNAME=admin ADMIN_PASSWORD=secret CONFIG_PATH=data/config.json npm start
+npm start
 ```
 
-Routes that require HTTP Basic Auth with admin credentials:
+## APIs
 
-- `/admin`
-- `/api/config/*`
-
-## API
-
-### Config management
-
-- `GET /api/config/registries`
-- `POST /api/config/registries`
-- `PUT /api/config/registries/:id`
-- `DELETE /api/config/registries/:id` (soft delete: set `enabled=false`)
-- `POST /api/config/registries/test`
-- `POST /api/config/reload`
-
-### Status
-
+- `GET /api/dashboard`
 - `GET /api/status/registries`
+- `GET /api/repositories/:registryId/:repository/tags`
 
-## Response format
-
-Success:
-
-```json
-{ "ok": true, "data": {} }
-```
-
-Failure:
-
-```json
-{ "ok": false, "error": { "code": "VALIDATION_ERROR", "message": "..." } }
-```
-
-## Runtime behavior
-
-- Config updates are transactional: validate -> save -> apply scheduler.
-- If scheduler apply fails, runtime attempts rollback to last active config.
-- Sync failures on one registry do not stop other registry workers.
+The service is read-only and does not implement built-in authentication. Put it behind internal network controls, a gateway, Ingress, or reverse proxy when needed.

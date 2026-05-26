@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OCI Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="page terminal-shell">
+      <header class="topbar terminal-header">
+        <div class="terminal-title-block">
+          <p class="eyebrow">read-only registry cache</p>
+          <h1><span class="prompt-symbol">$</span> oci-dashboard</h1>
+          <p>Inspect cached repositories, tags, manifests, layers, and build commands.</p>
+        </div>
+        <div class="topbar-actions terminal-actions">
+          <span id="refresh-state" class="pill status-pill" role="status" aria-live="polite">Loading</span>
+          <button id="theme-toggle" type="button" aria-label="Toggle color theme" aria-pressed="true">Light</button>
+          <button id="manual-refresh" type="button">Refresh</button>
+        </div>
+      </header>
+
+      <section id="summary" class="summary-grid terminal-summary" aria-label="Dashboard summary"></section>
+      <section id="errors" class="error-list" aria-label="Registry errors"></section>
+
+      <section class="terminal-controls controls" aria-label="Dashboard filters">
+        <label>
+          <span>search</span>
+          <input id="search" type="search" placeholder="astronomy/office-website" />
+        </label>
+        <label>
+          <span>registries</span>
+          <select id="registry-filter">
+            <option value="all">All registries</option>
+          </select>
+        </label>
+        <label>
+          <span>namespace</span>
+          <select id="primary-name">
+            <option value="all">All primary names</option>
+          </select>
+        </label>
+        <label>
+          <span>status</span>
+          <select id="status-filter">
+            <option value="all">All statuses</option>
+            <option value="healthy">Healthy</option>
+            <option value="degraded">Degraded</option>
+            <option value="error">Error</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </label>
+      </section>
+
+      <section id="repository-list" class="repository-list terminal-stream" aria-label="Repositories"></section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
