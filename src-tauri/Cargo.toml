@@ -1,6 +1,6 @@
 [package]
 name = "oci-vue"
-version = "0.1.0"
+version = "0.1.5"
 description = "Desktop OCI registry browser"
 authors = ["Astro24002"]
 edition = "2021"
